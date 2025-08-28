@@ -108,7 +108,7 @@ app.post('/webhook', async (req, res) => {
     const trackdrivePayload = {
       lead_token: LEAD_TOKEN,
       ip_address: req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || '',
-      source_url: req.headers.referer || '',
+      source_url: 'https://mva-laura-i3vvi.ondigitalocean.app/',
       ...Object.keys(FIELD_MAPPING).reduce((acc, formField) => {
         const apiField = FIELD_MAPPING[formField];
         const value = cleanPayload[formField];
@@ -160,7 +160,7 @@ app.post('/webhook', async (req, res) => {
         value = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || '';
       }
       if (key === 'source_url' && !value) {
-        value = req.headers.referer || '';
+        value = 'https://mva-laura-i3vvi.ondigitalocean.app/';
       }
       
       // Convert tcpa_opt_in to Yes/No format for sheets
@@ -243,7 +243,7 @@ app.post('/test-webhook', (req, res) => {
   const trackdrivePayload = {
     lead_token: LEAD_TOKEN,
     ip_address: req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || '',
-    source_url: req.headers.referer || '',
+    source_url: 'https://mva-laura-i3vvi.ondigitalocean.app/',
     ...Object.keys(FIELD_MAPPING).reduce((acc, formField) => {
       const apiField = FIELD_MAPPING[formField];
       const value = cleanPayload[formField];
