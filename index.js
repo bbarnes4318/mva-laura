@@ -16,28 +16,22 @@ const SHEET_TITLE = 'rideshare';
 const TRACKDRIVE_API_URL = 'https://ramonmarquez.trackdrive.com/api/v1/leads';
 const LEAD_TOKEN = '74aae788dcb64a4c8c5328176bb6403a';
 
-// Headers for Google Sheets - MVA specific
+// Headers for Google Sheets - exact fields specified
 const HEADERS = [
   'first_name',
   'last_name',
-  'phone',
+  'caller_id',
   'email',
   'address',
   'city',
   'state',
   'zip',
   'accident_date',
-  'injury_type',
-  'insurance_company',
-  'at_fault_party',
-  'witnesses',
-  'police_report',
-  'medical_treatment',
-  'tcpa_opt_in',
-  'trusted_form_cert_url',
   'ip_address',
   'source_url',
-  'submission_date'
+  'trusted_form_cert_url',
+  'tcpa_opt_in',
+  'lead_token'
 ];
 
 // Field mapping from form to TrackDrive API
@@ -126,14 +120,17 @@ app.post('/webhook', async (req, res) => {
       let value = payload[key];
       
       // Handle special mappings for Google Sheets
-      if (key === 'phone' && !value) {
-        value = payload.caller_id; // Map caller_id to phone
-      }
       if (key === 'trusted_form_cert_url' && !value) {
         value = payload.xxTrustedFormCertUrl; // Map Trusted Form field
       }
-      if (key === 'submission_date' && !value) {
-        value = new Date().toISOString().split('T')[0]; // Current date
+      if (key === 'lead_token' && !value) {
+        value = LEAD_TOKEN; // Add the static lead token
+      }
+      if (key === 'ip_address' && !value) {
+        value = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || '';
+      }
+      if (key === 'source_url' && !value) {
+        value = req.headers.referer || '';
       }
       
       if (typeof value === 'boolean') return value ? 'true' : 'false';
