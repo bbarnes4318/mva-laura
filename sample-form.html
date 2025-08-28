@@ -64,7 +64,7 @@
     <div class="container">
         <h1>Get Your Free Case Evaluation</h1>
         
-        <form id="mvaForm" action="/webhook" method="POST">
+        <form id="mvaForm" action="/webhook" method="POST" enctype="application/x-www-form-urlencoded">
             <!-- Trusted Form Certificate URL (hidden field) -->
             <input type="hidden" name="xxTrustedFormCertUrl" id="xxTrustedFormCertUrl">
             
@@ -166,6 +166,16 @@
             </div>
             
             <div class="form-group">
+                <label for="lead_source">Lead Source</label>
+                <input type="hidden" id="lead_source" name="lead_source" value="Web Form">
+            </div>
+            
+            <div class="form-group">
+                <label for="campaign_id">Campaign ID</label>
+                <input type="hidden" id="campaign_id" name="campaign_id" value="MVA_Accident_Form">
+            </div>
+            
+            <div class="form-group">
                 <label>
                     <input type="checkbox" id="tcpa_opt_in" name="tcpa_opt_in" value="1" required>
                     I consent to receive calls and/or text messages from this company and its affiliates at the phone number provided above. I understand that consent is not a condition of purchase.
@@ -184,8 +194,7 @@
             var invertFieldSensitivity = false;
             var tf = document.createElement('script');
             tf.type = 'text/javascript'; tf.async = true;
-            tf.src = 'http' + ('https:' == document.location.protocol ? 's' : '') +
-              '://api.trustedform.com/trustedform.js?provide_referrer=' + escape(provideReferrer) + '&field=' + escape(field) + '&l='+new Date().getTime()+Math.random() + '&invert_field_sensitivity=' + invertFieldSensitivity;
+            tf.src = 'https://api.trustedform.com/trustedform.js?provide_referrer=' + encodeURIComponent(provideReferrer) + '&field=' + encodeURIComponent(field) + '&l='+new Date().getTime()+Math.random() + '&invert_field_sensitivity=' + encodeURIComponent(invertFieldSensitivity);
             var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(tf, s); }
         )();
         
@@ -195,7 +204,7 @@
         }
     </script>
     <noscript>
-        <img src="http://api.trustedform.com/ns.gif" />
+        <img src="https://api.trustedform.com/ns.gif" />
     </noscript>
 </body>
 </html>
