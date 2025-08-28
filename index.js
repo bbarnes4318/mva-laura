@@ -25,7 +25,7 @@ app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
-const SHEET_TITLE = 'rideshare';
+const SHEET_TITLE = 'mva';
 
 // TrackDrive API configuration
 const TRACKDRIVE_API_URL = 'https://ramonmarquez.trackdrive.com/api/v1/leads';
@@ -176,16 +176,22 @@ app.post('/webhook', async (req, res) => {
     console.log('Google Sheets row:', JSON.stringify(row, null, 2));
 
     // Send to Google Sheets
-    const sheets = await getSheetsClient();
+    try {
+      const sheets = await getSheetsClient();
 
-    if (!sheetReady) {
-      await ensureSheetAndHeaders(sheets, SHEET_TITLE, HEADERS);
-      sheetReady = true;
+      if (!sheetReady) {
+        await ensureSheetAndHeaders(sheets, SHEET_TITLE, HEADERS);
+        sheetReady = true;
+      }
+
+      await appendRowToSheet(sheets, SHEET_TITLE, row);
+
+      console.log('Google Sheets: Row appended successfully');
+    } catch (sheetsError) {
+      console.error('Google Sheets error:', sheetsError);
+      // Don't fail the entire request if Google Sheets fails
+      // The TrackDrive API already succeeded
     }
-
-    await appendRowToSheet(sheets, SHEET_TITLE, row);
-
-    console.log('Google Sheets: Row appended successfully');
 
     res.json({ 
       success: true, 

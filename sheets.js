@@ -25,6 +25,12 @@ async function getSheetsClient() {
     privateKey = privateKey.slice(1, -1);
   }
 
+  // Ensure the private key has proper formatting
+  if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+    // If it's a raw key, wrap it properly
+    privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
+  }
+
   const auth = new google.auth.GoogleAuth({
     credentials: {
       type: 'service_account',
