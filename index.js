@@ -56,6 +56,7 @@ let sheetReady = false;
 
 // Serve the landing page at root
 app.get('/', (req, res) => {
+  console.log('Serving landing page from:', path.join(__dirname, 'sample-form.html'));
   res.sendFile(path.join(__dirname, 'sample-form.html'));
 });
 
