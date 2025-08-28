@@ -92,34 +92,43 @@ app.post('/webhook', async (req, res) => {
   try {
     const payload = req.body || {};
     
+    console.log('Received payload:', JSON.stringify(payload, null, 2));
+    
+    // Filter out extra TrustedForm fields we don't need
+    const cleanPayload = {};
+    Object.keys(payload).forEach(key => {
+      if (!key.startsWith('xxTrustedForm') || key === 'xxTrustedFormCertUrl') {
+        cleanPayload[key] = payload[key];
+      }
+    });
+    
+    console.log('Cleaned payload:', JSON.stringify(cleanPayload, null, 2));
+    
     // Build the TrackDrive API payload
     const trackdrivePayload = {
       lead_token: LEAD_TOKEN,
+      ip_address: req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || '',
+      source_url: req.headers.referer || '',
       ...Object.keys(FIELD_MAPPING).reduce((acc, formField) => {
         const apiField = FIELD_MAPPING[formField];
-        const value = payload[formField];
+        const value = cleanPayload[formField];
         
         if (value !== null && value !== undefined && value !== '') {
-          acc[apiField] = String(value);
+          // Convert tcpa_opt_in to Yes/No format
+          if (formField === 'tcpa_opt_in') {
+            acc[apiField] = value === '1' || value === true || value === 'true' ? 'Yes' : 'No';
+          } else {
+            acc[apiField] = String(value);
+          }
         }
         
         return acc;
       }, {})
     };
 
-    // Add static fields for TrackDrive
-    if (payload.xxTrustedFormCertUrl) {
-      trackdrivePayload.trusted_form_cert_url = payload.xxTrustedFormCertUrl;
-    }
-
-    // Add IP address if not provided
-    if (!trackdrivePayload.ip_address) {
-      trackdrivePayload.ip_address = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || '';
-    }
-
-    // Add source URL if not provided
-    if (!trackdrivePayload.source_url) {
-      trackdrivePayload.source_url = req.headers.referer || '';
+    // Add TrustedForm certificate URL
+    if (cleanPayload.xxTrustedFormCertUrl) {
+      trackdrivePayload.trusted_form_cert_url = cleanPayload.xxTrustedFormCertUrl;
     }
 
     console.log('Sending to TrackDrive API:', JSON.stringify(trackdrivePayload, null, 2));
@@ -138,11 +147,11 @@ app.post('/webhook', async (req, res) => {
 
     // Build the row for Google Sheets in the exact headers order
     const row = HEADERS.map((key) => {
-      let value = payload[key];
+      let value = cleanPayload[key];
       
       // Handle special mappings for Google Sheets
       if (key === 'trusted_form_cert_url' && !value) {
-        value = payload.xxTrustedFormCertUrl; // Map Trusted Form field
+        value = cleanPayload.xxTrustedFormCertUrl; // Map Trusted Form field
       }
       if (key === 'lead_token' && !value) {
         value = LEAD_TOKEN; // Add the static lead token
@@ -154,10 +163,17 @@ app.post('/webhook', async (req, res) => {
         value = req.headers.referer || '';
       }
       
-      if (typeof value === 'boolean') return value ? 'true' : 'false';
+      // Convert tcpa_opt_in to Yes/No format for sheets
+      if (key === 'tcpa_opt_in' && value) {
+        value = value === '1' || value === true || value === 'true' ? 'Yes' : 'No';
+      }
+      
+      if (typeof value === 'boolean') return value ? 'Yes' : 'No';
       if (value === null || value === undefined) return '';
       return String(value);
     });
+
+    console.log('Google Sheets row:', JSON.stringify(row, null, 2));
 
     // Send to Google Sheets
     const sheets = await getSheetsClient();
@@ -211,6 +227,55 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
+// Add a test endpoint to verify the payload structure
+app.post('/test-webhook', (req, res) => {
+  const payload = req.body || {};
+  
+  // Filter out extra TrustedForm fields we don't need
+  const cleanPayload = {};
+  Object.keys(payload).forEach(key => {
+    if (!key.startsWith('xxTrustedForm') || key === 'xxTrustedFormCertUrl') {
+      cleanPayload[key] = payload[key];
+    }
+  });
+  
+  // Build the TrackDrive API payload (without actually sending)
+  const trackdrivePayload = {
+    lead_token: LEAD_TOKEN,
+    ip_address: req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || '',
+    source_url: req.headers.referer || '',
+    ...Object.keys(FIELD_MAPPING).reduce((acc, formField) => {
+      const apiField = FIELD_MAPPING[formField];
+      const value = cleanPayload[formField];
+      
+      if (value !== null && value !== undefined && value !== '') {
+        // Convert tcpa_opt_in to Yes/No format
+        if (formField === 'tcpa_opt_in') {
+          acc[apiField] = value === '1' || value === true || value === 'true' ? 'Yes' : 'No';
+        } else {
+          acc[apiField] = String(value);
+        }
+      }
+      
+      return acc;
+    }, {})
+  };
+
+  // Add TrustedForm certificate URL
+  if (cleanPayload.xxTrustedFormCertUrl) {
+    trackdrivePayload.trusted_form_cert_url = cleanPayload.xxTrustedFormCertUrl;
+  }
+
+  res.json({
+    original_payload: payload,
+    cleaned_payload: cleanPayload,
+    trackdrive_payload: trackdrivePayload,
+    headers: req.headers,
+    ip: req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || '',
+    referer: req.headers.referer || ''
+  });
+});
+
 app.use((req, res) => {
   res.status(404).json({ 
     error: 'Not Found',
@@ -218,6 +283,7 @@ app.use((req, res) => {
     endpoints: {
       'GET /': 'Landing page (MVA form)',
       'POST /webhook': 'Submit form data to TrackDrive API and Google Sheets',
+      'POST /test-webhook': 'Test endpoint to verify payload structure (no actual submission)',
       'GET /health': 'Health check',
       'GET /debug/env': 'Check environment variables'
     },
