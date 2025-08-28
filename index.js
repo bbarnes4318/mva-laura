@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const { getSheetsClient, ensureSheetAndHeaders, appendRowToSheet } = require('./sheets');
+const path = require('path'); // Added for serving static files
 
 const app = express();
 app.use(bodyParser.json({ limit: '1mb' }));
@@ -52,6 +53,11 @@ const FIELD_MAPPING = {
 };
 
 let sheetReady = false;
+
+// Serve the landing page at root
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'sample-form.html'));
+});
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
@@ -191,7 +197,17 @@ app.post('/webhook', async (req, res) => {
 });
 
 app.use((req, res) => {
-  res.status(404).json({ error: 'Not Found' });
+  res.status(404).json({ 
+    error: 'Not Found',
+    message: 'Available endpoints:',
+    endpoints: {
+      'GET /': 'Landing page (MVA form)',
+      'POST /webhook': 'Submit form data to TrackDrive API and Google Sheets',
+      'GET /health': 'Health check',
+      'GET /debug/env': 'Check environment variables'
+    },
+    requested_url: req.url
+  });
 });
 
 app.listen(PORT, () => {
