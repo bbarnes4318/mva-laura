@@ -64,7 +64,7 @@
     <div class="container">
         <h1>Get Your Free Case Evaluation</h1>
         
-        <form id="mvaForm" action="/webhook" method="POST" enctype="application/x-www-form-urlencoded">
+        <form id="mvaForm" action="/webhook" method="POST">
             <!-- Trusted Form Certificate URL (hidden field) -->
             <input type="hidden" name="xxTrustedFormCertUrl" id="xxTrustedFormCertUrl">
             
@@ -163,16 +163,6 @@
             <div class="form-group">
                 <label for="accident_date">When did the accident occur? <span class="required">*</span></label>
                 <input type="date" id="accident_date" name="accident_date" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="lead_source">Lead Source</label>
-                <input type="hidden" id="lead_source" name="lead_source" value="Web Form">
-            </div>
-            
-            <div class="form-group">
-                <label for="campaign_id">Campaign ID</label>
-                <input type="hidden" id="campaign_id" name="campaign_id" value="MVA_Accident_Form">
             </div>
             
             <div class="form-group">
